@@ -1,0 +1,32 @@
+<scene export_time="1429754802.760316" exported_by="Pandi" formatVersion="1.0.1" previous_export_time="0" >
+  <nodes >
+    <node name="Cylinder.001" >
+      <position y="0.352673" z="0.001551" x="0.033127" />
+      <rotation qw="0.000000" qx="0.000000" qy="1.000000" qz="-0.000000" />
+      <scale y="4.719748" z="4.719748" x="4.719748" />
+      <game >
+        <sensors />
+        <actuators />
+      </game>
+      <entity name="Cylinder.007" mass_radius="1.0" lock_trans_z="False" ghost="False" lock_rot_x="False" lock_rot_z="False" velocity_max="0.0" meshFile="Cylinder.007.mesh" physics_type="STATIC" damping_trans="0.03999999910593033" lock_trans_x="False" actor="False" mass="1.0" friction_x="1.0" friction_z="1.0" lock_trans_y="False" lock_rot_y="False" friction_y="1.0" damping_rot="0.10000000149011612" inertia_tensor="0.4000000059604645" anisotropic_friction="False" velocity_min="0.0" />
+    </node>
+    <node name="Camera" >
+      <position y="5.343665" z="6.507640" x="7.481132" />
+      <rotation qw="0.781600" qx="0.481707" qy="0.334251" qz="-0.212922" />
+      <scale y="1.000000" z="1.000000" x="1.000000" />
+      <game >
+        <sensors />
+        <actuators />
+      </game>
+      <camera projectionType="perspective" fov="0.5033799435163735" name="Camera" >
+        <clipping farPlaneDist="100.0" nearPlaneDist="0.10000000149011612" far="100.0" near="0.10000000149011612" />
+      </camera>
+    </node>
+  </nodes>
+  <externals />
+  <environment >
+    <colourAmbient g="0.0" r="0.0" b="0.0" />
+    <colourDiffuse g="0.05087608844041824" r="0.05087608844041824" b="0.05087608844041824" />
+    <colourBackground g="0.05087608844041824" r="0.05087608844041824" b="0.05087608844041824" />
+  </environment>
+</scene>
