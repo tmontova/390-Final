@@ -139,9 +139,10 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
 //        
 //        top_geo.setLocalTranslation(.7f, .5f, 0);
 //        bottom_geo.setLocalTranslation(.7f, .49f, 0);
-        CollisionShape s = CollisionShapeFactory.createMeshShape(eleph);
-        CompoundCollisionShape capsule = new CompoundCollisionShape();
-        capsule.addChildShape(s, Vector3f.ZERO);
+//        CollisionShape s = CollisionShapeFactory.createMeshShape(eleph);
+//        CompoundCollisionShape capsule = new CompoundCollisionShape();
+//        capsule.addChildShape(s, Vector3f.ZERO);
+        CapsuleCollisionShape capsule = new CapsuleCollisionShape(0.5f, 0.5f);
         eleph_phy = new CharacterControl(capsule, .01f);
         player = new Node("player");
  
