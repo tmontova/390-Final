@@ -28,17 +28,16 @@ import com.jme3.scene.shape.Box;
 import com.jme3.scene.shape.Cylinder;
 import com.jme3.scene.shape.Sphere;
 import com.jme3.scene.shape.Torus;
+import java.util.ArrayList;
 
 public class Main extends SimpleApplication implements ActionListener, PhysicsCollisionListener{
 
     private BulletAppState jBullet;
-    private RigidBodyControl arena;
-//    private RigidBodyControl ball_phy;
     private RigidBodyControl base_phy, sides_phy;
-    private RigidBodyControl eleph_body;
     private CharacterControl eleph_phy;
-//    private Geometry ball_geo;
-    private boolean left=false, right=false, forward=false, back=false;
+    ArrayList<CharacterControl> char_control = new ArrayList<CharacterControl>();
+    private boolean p1Left=false, p1Right=false, p1Forward=false, p1Back=false;
+    private boolean p2Left=false, p2Right=false, p2Forward=false, p2Back=false;
     private Node player;
     
     public static void main(String[] args) {
@@ -59,25 +58,14 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
         jBullet.getPhysicsSpace().addCollisionListener(this);
 
         
-        //arena set up
-//        sceneModel = assetManager.loadModel("Models/arena.scene");
-//        Material mat = new Material(assetManager, "Common/MatDefs/Misc/ShowNormals.j3md");
-//        sceneModel.setMaterial(mat);
-//        CollisionShape sceneShape = CollisionShapeFactory.createMeshShape((Node)sceneModel);
-//        arena = new RigidBodyControl(sceneShape, 0);
-//        sceneModel.addControl(arena);   
-//        rootNode.attachChild(sceneModel);
         arenaSetUp();
+        playerSetUp();
         playerSetUp();
         setUpLight();
         for(int i = 0; i < 10; i++){
             addBall();
         }
-        
-
-  
-//        jBullet.getPhysicsSpace().add(arena);
-//        jBullet.getPhysicsSpace().add(ball);  
+         
     }
     
     private void addBall(){
@@ -162,13 +150,13 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
         eleph_phy.setGravity(30);
 //        eleph_phy.setPhysicsLocation(new Vector3f(0,0.5f,0));
         jBullet.getPhysicsSpace().add(eleph_phy);
-        
+        char_control.add(eleph_phy);
         rootNode.attachChild(player);
     }
     
     
     
-      private void setUpLight() {
+    private void setUpLight() {
         AmbientLight al = new AmbientLight();
         al.setColor(ColorRGBA.White.mult(1.3f));
         rootNode.addLight(al);
@@ -180,32 +168,61 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
     }
     
     private void setUpKeys() {
-        inputManager.addMapping("Left", new KeyTrigger(KeyInput.KEY_A));
-        inputManager.addMapping("Right", new KeyTrigger(KeyInput.KEY_D));
-        inputManager.addMapping("Forward", new KeyTrigger(KeyInput.KEY_W));
-        inputManager.addMapping("Back", new KeyTrigger(KeyInput.KEY_S));
-        inputManager.addListener(this, "Left");
-        inputManager.addListener(this, "Right");
-        inputManager.addListener(this, "Right");
-        inputManager.addListener(this, "Forward");
-        inputManager.addListener(this, "Back");
+        inputManager.addMapping("p1Left", new KeyTrigger(KeyInput.KEY_A));
+        inputManager.addMapping("p1Right", new KeyTrigger(KeyInput.KEY_D));
+        inputManager.addMapping("p1Forward", new KeyTrigger(KeyInput.KEY_W));
+        inputManager.addMapping("p1Back", new KeyTrigger(KeyInput.KEY_S));
+        inputManager.addListener(this, "p1Left");
+        inputManager.addListener(this, "p1Right");
+        inputManager.addListener(this, "p1Right");
+        inputManager.addListener(this, "p1Forward");
+        inputManager.addListener(this, "p1Back");
+        inputManager.addMapping("p2Left", new KeyTrigger(KeyInput.KEY_LEFT));
+        inputManager.addMapping("p2Right", new KeyTrigger(KeyInput.KEY_RIGHT));
+        inputManager.addMapping("p2Forward", new KeyTrigger(KeyInput.KEY_UP));
+        inputManager.addMapping("p2Back", new KeyTrigger(KeyInput.KEY_DOWN));
+        inputManager.addListener(this, "p2Left");
+        inputManager.addListener(this, "p2Right");
+        inputManager.addListener(this, "p2Right");
+        inputManager.addListener(this, "p2Forward");
+        inputManager.addListener(this, "p2Back");
+        
     }
 
     @Override
     public void simpleUpdate(float tpf) {
-        Vector3f pos = eleph_phy.getPhysicsLocation();
-        
-        if(left){
-            eleph_phy.setPhysicsLocation(new Vector3f(pos.x-.01f, pos.y, pos.z));
+        Vector3f pos;
+
+        if(p1Left || p1Right || p1Forward || p1Back){
+            System.out.println("SimpleUpdate");
+            pos = char_control.get(0).getPhysicsLocation();
+            if(p1Left){
+                char_control.get(0).setPhysicsLocation(new Vector3f(pos.x-.01f, pos.y, pos.z));
+            }
+            if(p1Right){
+                char_control.get(0).setPhysicsLocation(new Vector3f(pos.x+.01f, pos.y, pos.z));
+            }
+            if(p1Forward){
+                char_control.get(0).setPhysicsLocation(new Vector3f(pos.x, pos.y, pos.z-.01f));
+            }
+            if(p1Back){
+                char_control.get(0).setPhysicsLocation(new Vector3f(pos.x, pos.y, pos.z+.01f));
+            }
         }
-        if(right){
-            eleph_phy.setPhysicsLocation(new Vector3f(pos.x+.01f, pos.y, pos.z));
-        }
-        if(forward){
-            eleph_phy.setPhysicsLocation(new Vector3f(pos.x, pos.y, pos.z-.01f));
-        }
-        if(back){
-            eleph_phy.setPhysicsLocation(new Vector3f(pos.x, pos.y, pos.z+.01f));
+        else if(p2Left || p2Right || p2Forward || p2Back){
+            pos = char_control.get(1).getPhysicsLocation();
+            if(p2Left){
+                char_control.get(1).setPhysicsLocation(new Vector3f(pos.x-.01f, pos.y, pos.z));
+            }
+            if(p2Right){
+                char_control.get(1).setPhysicsLocation(new Vector3f(pos.x+.01f, pos.y, pos.z));
+            }
+            if(p2Forward){
+                char_control.get(1).setPhysicsLocation(new Vector3f(pos.x, pos.y, pos.z-.01f));
+            }
+            if(p2Back){
+                char_control.get(1).setPhysicsLocation(new Vector3f(pos.x, pos.y, pos.z+.01f));
+            }
         }
     }
 
@@ -215,18 +232,30 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
     }
 
     public void onAction(String name, boolean isPressed, float tpf) {
-        if(name.equals("Left")){
-            left = isPressed;
+        if(name.equals("p1Left")){
+            p1Left = isPressed;
         }        
-        if(name.equals("Right")){
-            right = isPressed;
+        if(name.equals("p1Right")){
+            p1Right = isPressed;
         }        
-        if(name.equals("Forward")){
-            forward = isPressed;
+        if(name.equals("p1Forward")){
+            p1Forward = isPressed;
         }        
-        if(name.equals("Back")){
-            back = isPressed;
-        }    
+        if(name.equals("p1Back")){
+            p1Back = isPressed;
+        } 
+        if(name.equals("p2Left")){
+            p2Left = isPressed;
+        }        
+        if(name.equals("p2Right")){
+            p2Right = isPressed;
+        }        
+        if(name.equals("p2Forward")){
+            p2Forward = isPressed;
+        }        
+        if(name.equals("p2Back")){
+            p2Back = isPressed;
+        } 
     }
     
     @Override
