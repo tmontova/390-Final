@@ -21,7 +21,9 @@ import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Matrix3f;
 import com.jme3.math.Vector3f;
+import com.jme3.renderer.Camera;
 import com.jme3.renderer.RenderManager;
+import com.jme3.renderer.ViewPort;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
@@ -39,9 +41,9 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
     ArrayList<CharacterControl> char_control = new ArrayList<CharacterControl>();
     private boolean p1Left=false, p1Right=false, p1Forward=false, p1Back=false;
     private boolean p2Left=false, p2Right=false, p2Forward=false, p2Back=false;
-    private Node player;
     private Torus side;
-    
+    private Camera cam_2;
+
     public static void main(String[] args) {
         Main app = new Main();
         app.start();
@@ -52,17 +54,25 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
         viewPort.setBackgroundColor(new ColorRGBA(0.7f, 0.8f, 1f, 1f));
         cam.setLocation(new Vector3f(0,12,12));
         cam.lookAt(new Vector3f(0,0,0), Vector3f.UNIT_Y);
+        cam_2 = cam.clone();
+        cam.setViewPort(0.0f, 1.0f, 0.5f, 1.0f);
+        cam_2.setViewPort(0.0f, 1.0f, 0.0f, 0.5f);
+        ViewPort vp2 = renderManager.createMainView("View of cam_2", cam_2);
+        vp2.attachScene(rootNode);
+        vp2.setClearFlags(true, true, true);
+        vp2.setBackgroundColor(ColorRGBA.DarkGray);
+        
         flyCam.setEnabled(false);
+        
+        
         setUpKeys();
         jBullet = new BulletAppState();
         stateManager.attach(jBullet);
-        
         jBullet.getPhysicsSpace().addCollisionListener(this);
-
         
         arenaSetUp();
-        playerSetUp();
-//        playerSetUp();
+        playerSetUp(new Vector3f(6, 0, 0));
+        playerSetUp(new Vector3f(6, 0 ,0));
         setUpLight();
         for(int i = 0; i < 10; i++){
             addBall();
@@ -118,13 +128,13 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
         rootNode.attachChild(sides_geo);
     }
     
-    private void playerSetUp(){
+    private void playerSetUp(Vector3f loc){
         Spatial eleph = assetManager.loadModel("Models/e1.obj");
 
         CapsuleCollisionShape capsule = new CapsuleCollisionShape(0.5f, 0.5f);
         eleph_phy = new CharacterControl(capsule, .01f);
         
-        player = new Node("player");
+        Node player = new Node("player");
  
         Material eleph_mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
         eleph_mat.setColor("Diffuse", ColorRGBA.Blue);
@@ -133,9 +143,9 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
         
         player.attachChild(eleph);
         player.addControl(eleph_phy);
-        eleph_phy.setPhysicsLocation(new Vector3f(6,0,0));
+        eleph_phy.setPhysicsLocation(loc);
         
-
+        BetterCharacterControl bcc = new BetterCharacterControl(1.5f, 1.5f, 1.5f);
         jBullet.getPhysicsSpace().add(eleph_phy);
         rootNode.attachChild(player);
         char_control.add(eleph_phy);
@@ -176,39 +186,38 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
         
     }
 
-    private double rotation = 0;
+    private double rotationP1 = 0;
+    private double rotationP2 = 0;
     @Override
     public void simpleUpdate(float tpf) {
-        Vector3f pos;
+        float radius = side.getOuterRadius();
+        float x, y, z;
+
 
         if(p1Left || p1Right || p1Forward || p1Back){
-//            System.out.println("SimpleUpdate");
-            pos = char_control.get(0).getPhysicsLocation();
-            float radius = side.getOuterRadius();
-//            System.out.println("Walk direction: "+char_control.get(0).getWalkDirection());
+            Vector3f pos = char_control.get(0).getPhysicsLocation();
             if(p1Left){
-                rotation+=.005;
-                float x = (float) (radius*Math.cos(rotation));
-                float y = pos.y;
-                float z = (float) (radius*Math.sin(rotation));
+                rotationP1+=.005;
+                x = (float) (radius*Math.cos(rotationP1));
+                y = pos.y;
+                z = (float) (radius*Math.sin(rotationP1));
                 char_control.get(0).setPhysicsLocation(new Vector3f(x, y, z));
-                System.out.println(char_control.get(0).getViewDirection());
+//                System.out.println(char_control.get(0).getViewDirection());
                 Vector3f view = new Vector3f(-pos.z, 0, pos.x);
                 view.normalize();
                 char_control.get(0).setViewDirection(view);
 
             }
             if(p1Right){
-                rotation-=.005;
-                float x = (float) (radius*Math.cos(rotation));
-                float y = pos.y;
-                float z = (float) (radius*Math.sin(rotation));
+                rotationP1-=.005;
+                x = (float) (radius*Math.cos(rotationP1));
+                y = pos.y;
+                z = (float) (radius*Math.sin(rotationP1));
                 char_control.get(0).setPhysicsLocation(new Vector3f(x, y, z));
-                System.out.println(char_control.get(0).getViewDirection());
+//                System.out.println(char_control.get(0).getViewDirection());
                 Vector3f view = new Vector3f(-pos.z, 0, pos.x);
                 view.normalize();
                 char_control.get(0).setViewDirection(view);
-//                char_control.get(0).setPhysicsLocation(new Vector3f(pos.x+.01f, pos.y, pos.z));
             }
             if(p1Forward){
 //                char_control.get(0).setPhysicsLocation(new Vector3f(pos.x, pos.y, pos.z-.01f));
@@ -217,21 +226,34 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
 //                char_control.get(0).setPhysicsLocation(new Vector3f(pos.x, pos.y, pos.z+.01f));
             }
         }
-//        else if(p2Left || p2Right || p2Forward || p2Back){
-//            pos = char_control.get(1).getPhysicsLocation();
-//            if(p2Left){
-//                char_control.get(1).setPhysicsLocation(new Vector3f(pos.x-.01f, pos.y, pos.z));
-//            }
-//            if(p2Right){
-//                char_control.get(1).setPhysicsLocation(new Vector3f(pos.x+.01f, pos.y, pos.z));
-//            }
-//            if(p2Forward){
-//                char_control.get(1).setPhysicsLocation(new Vector3f(pos.x, pos.y, pos.z-.01f));
-//            }
-//            if(p2Back){
-//                char_control.get(1).setPhysicsLocation(new Vector3f(pos.x, pos.y, pos.z+.01f));
-//            }
-//        }
+        else if(p2Left || p2Right || p2Forward || p2Back){
+            if(char_control.size() > 1){
+                Vector3f pos = char_control.get(1).getPhysicsLocation();
+                if(p2Left){
+                    rotationP2+=.005;
+                    x = (float) (radius*Math.cos(rotationP2));
+                    y = pos.y;
+                    z = (float) (radius*Math.sin(rotationP2));
+                    char_control.get(1).setPhysicsLocation(new Vector3f(x, y, z));
+//                    System.out.println(char_control.get(1).getViewDirection());
+                    Vector3f view = new Vector3f(-pos.z, 0, pos.x);
+                    view.normalize();
+                    char_control.get(1).setViewDirection(view);
+
+                }
+                if(p2Right){
+                    rotationP2-=.005;
+                    x = (float) (radius*Math.cos(rotationP2));
+                    y = pos.y;
+                    z = (float) (radius*Math.sin(rotationP2));
+                    char_control.get(1).setPhysicsLocation(new Vector3f(x, y, z));
+//                    System.out.println(char_control.get(1).getViewDirection());
+                    Vector3f view = new Vector3f(-pos.z, 0, pos.x);
+                    view.normalize();
+                    char_control.get(1).setViewDirection(view);
+                }
+            }
+        }
     }
 
     @Override
@@ -264,6 +286,7 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
         if(name.equals("p2Back")){
             p2Back = isPressed;
         } 
+        System.out.println(p2Left+" "+p1Left);
     }
     
     @Override
