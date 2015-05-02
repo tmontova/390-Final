@@ -6,22 +6,18 @@ import com.jme3.bullet.collision.PhysicsCollisionEvent;
 import com.jme3.bullet.collision.PhysicsCollisionListener;
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
-import com.jme3.bullet.util.CollisionShapeFactory;
-import com.jme3.bullet.collision.shapes.CollisionShape;
-import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
-import com.jme3.bullet.collision.shapes.MeshCollisionShape;
-import com.jme3.bullet.control.BetterCharacterControl;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.GhostControl;
 import com.jme3.bullet.control.RigidBodyControl;
+import com.jme3.font.BitmapText;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
+import com.jme3.light.PointLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
-import com.jme3.math.Matrix3f;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
 import com.jme3.renderer.RenderManager;
@@ -30,18 +26,17 @@ import com.jme3.scene.CameraNode;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
-import com.jme3.scene.control.CameraControl;
 import com.jme3.scene.control.CameraControl.ControlDirection;
 import com.jme3.scene.shape.Box;
-import com.jme3.scene.shape.Cylinder;
 import com.jme3.scene.shape.Sphere;
 import com.jme3.scene.shape.Torus;
 import java.util.ArrayList;
 
+
 public class Main extends SimpleApplication implements ActionListener, PhysicsCollisionListener{
 
     private BulletAppState jBullet;
-    private RigidBodyControl base_phy, sides_phy, char1, char2;
+    private RigidBodyControl base_phy, sides_phy,center_phy, char1, char2;
     private CharacterControl eleph_phy;
     ArrayList<CharacterControl> char_control = new ArrayList<CharacterControl>();
     private boolean p1Left=false, p1Right=false, p1Forward=false, p1Back=false;
@@ -51,6 +46,8 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
     private Camera cam_2;
     private Node player1, player2;
     private GhostControl ghost1, ghost2;
+    private int p1Score = 0, p2Score = 0;
+    BitmapText hud;
 
     public static void main(String[] args) {
         Main app = new Main();
@@ -67,6 +64,13 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
         char2 = new RigidBodyControl(1f);
         cameraSetUp(1);
         
+        hud = new BitmapText(guiFont, false);
+        hud.setSize(guiFont.getCharSet().getRenderedSize());
+        hud.setColor(ColorRGBA.Blue);
+        hud.setText("Blue: 0, Red: 0");
+        hud.setLocalTranslation(0, 600, 0);
+        guiNode.attachChild(hud);
+        
         setUpKeys();
         jBullet = new BulletAppState();
         stateManager.attach(jBullet);
@@ -77,19 +81,27 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
         playerSetUp(new Vector3f(0f, 0, 6.5f), player2, ghost2, char2, 1);
         setUpLight();
         for(int i = 0; i < 10; i++){
-            addBall();
+            float randx = (float) Math.floor(Math.random()*3);
+            float randz = (float) Math.floor(Math.random()*3);
+            if(Math.random() > .5){
+                randx = randx*-1;
+            }
+            if(Math.random() > .5){
+                randz = randz*-1;
+            }
+            addBall(new Vector3f(randx, 3.5f, randz));
         }
          
     }
     private void cameraSetUp(int i){
-        CameraNode camNode1 = null;
-        CameraNode camNode2 = null;
+        CameraNode camNode1;
+        CameraNode camNode2;
         if (i == 0) {
             cam.setLocation(new Vector3f(0, 12, 12));
             cam.lookAt(new Vector3f(0, 0, 0), Vector3f.UNIT_Y);
             cam_2 = cam.clone();
-            cam.setViewPort(0.0f, 1.0f, 0.5f, 1.0f);
-            cam_2.setViewPort(0.0f, 1.0f, 0.0f, 0.5f);
+            cam.setViewPort(0.0f, 1.0f, 0.50f, 1.0f);
+            cam_2.setViewPort(0.0f, 1.0f, 0.0f, 0.50f);
             ViewPort vp2 = renderManager.createMainView("View of cam_2", cam_2);
             vp2.attachScene(rootNode);
             vp2.setClearFlags(true, true, true);
@@ -110,14 +122,7 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
 
         }
         else {
-            try {
-                player1.detachChild(camNode1);
-                player2.detachChild(camNode2);
-                cam_2.setViewPort(0.0f, 0.0f, 0.0f, 0.0f);
-            }
-            catch(Exception e){
-                System.out.println("Cam nodes not attached");
-            }
+
             viewPort.setBackgroundColor(new ColorRGBA(0.7f, 0.8f, 1f, 1f));
             cam.setLocation(new Vector3f(0, 12, 12));
             cam.lookAt(new Vector3f(0, 0, 0), Vector3f.UNIT_Y);
@@ -126,17 +131,18 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
             flyCam.setEnabled(false);
     }
     
-    private void addBall(){
+    private void addBall(Vector3f loc){
         Sphere s = new Sphere(16, 16, 0.2f);
         Geometry ball_geo = new Geometry("Ball", s);
-        ball_geo.setLocalTranslation(new Vector3f(0, 2f, 0f));
+        ball_geo.setLocalTranslation(loc);
         rootNode.attachChild(ball_geo);
-        Material mat2 = new Material(assetManager, "Common/MatDefs/Misc/ShowNormals.j3md");
+        Material mat2 = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
+        mat2.setTexture("DiffuseMap", assetManager.loadTexture("Textures/soccer.jpg"));
         ball_geo.setMaterial(mat2);
         
         RigidBodyControl ball_phy = new RigidBodyControl(5f);
         ball_geo.addControl(ball_phy);
-        ball_phy.setFriction(0.1f);
+        ball_phy.setFriction(0.001f);
         ball_phy.setRestitution(1);
         jBullet.getPhysicsSpace().add(ball_phy);
     }
@@ -145,38 +151,50 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
 
         Box base = new Box(10, 2, 10);
         Torus sides = new Torus(16, 16, 0.5f, 6);
+        Sphere sphere = new Sphere(16,16,6);
         side = sides;
         Geometry base_geo = new Geometry("base", base);
         Geometry sides_geo = new Geometry("side", sides);
+        Geometry sphere_geo = new Geometry("center", sphere);
 
         sides_geo.rotate(1.6f, 0, 0);
         sides_geo.setLocalTranslation(0, 2, 0);
-        Material baseMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        baseMat.setTexture("ColorMap", assetManager.loadTexture("Textures/brick.jpg"));        
+        sphere_geo.setLocalTranslation(0, -2.5f, 0);
         
-        Material sidesMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        sidesMat.setTexture("ColorMap", assetManager.loadTexture("Textures/wood.jpg"));
+        Material baseMat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
+        baseMat.setTexture("DiffuseMap", assetManager.loadTexture("Textures/grass.jpg"));        
+        Material centerMat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
+        centerMat.setTexture("DiffuseMap", assetManager.loadTexture("Textures/iron.jpg")); 
+        Material sidesMat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
+        sidesMat.setTexture("DiffuseMap", assetManager.loadTexture("Textures/wood.jpg"));
         
         base_geo.setMaterial(baseMat);
         sides_geo.setMaterial(sidesMat);
+        sphere_geo.setMaterial(centerMat);
 
         base_phy = new RigidBodyControl(0f);
         sides_phy = new RigidBodyControl(0f);
+        center_phy = new RigidBodyControl(0f);
         base_geo.addControl(base_phy);
         sides_geo.addControl(sides_phy);
-        base_phy.setFriction(0.1f);
+        sphere_geo.addControl(center_phy);
+        base_phy.setFriction(0f);
         base_phy.setRestitution(0);
+        center_phy.setRestitution(0);
+        center_phy.setFriction(0f);
         sides_phy.setRestitution(1);
+        jBullet.getPhysicsSpace().add(center_phy);
         jBullet.getPhysicsSpace().add(sides_phy);
         jBullet.getPhysicsSpace().add(base_phy);
 
+        rootNode.attachChild(sphere_geo);
         rootNode.attachChild(base_geo);
         rootNode.attachChild(sides_geo);
     }
     
     private void playerSetUp(Vector3f loc, Node player, GhostControl ghost, RigidBodyControl rbc, int i){
-        Spatial eleph = assetManager.loadModel("Models/e1.obj");
-
+        Spatial eleph = assetManager.loadModel("Models/e2.obj");
+        
         CapsuleCollisionShape capsule = new CapsuleCollisionShape(0.1f, 0.1f);
         eleph_phy = new CharacterControl(capsule, .01f);
         
@@ -191,11 +209,7 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
         eleph.setMaterial(eleph_mat);
         eleph.setLocalScale(0.5f);
         
-
-        eleph_phy.addCollideWithGroup(1);
-        eleph_phy.setCollisionGroup(1);
-        
-        ghost = new GhostControl(new BoxCollisionShape(new Vector3f(1,1,1)));
+        ghost = new GhostControl(new BoxCollisionShape(new Vector3f(1.5f,1,1.5f)));
         player.addControl(rbc);
         player.addControl(ghost);
         
@@ -203,8 +217,10 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
         player.addControl(eleph_phy);
         
         eleph_phy.setPhysicsLocation(loc);
+        Vector3f view = new Vector3f(-loc.z, 0, loc.x);
+        view.normalize();
+        eleph_phy.setViewDirection(view);
         
-        BetterCharacterControl bcc = new BetterCharacterControl(1.5f, 1.5f, 1.5f);
         jBullet.getPhysicsSpace().add(eleph_phy);
         jBullet.getPhysicsSpace().add(ghost);
         rootNode.attachChild(player);
@@ -215,13 +231,20 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
     
     private void setUpLight() {
         AmbientLight al = new AmbientLight();
-        al.setColor(ColorRGBA.White.mult(1.3f));
+        al.setColor(ColorRGBA.White);
+
         rootNode.addLight(al);
- 
-        DirectionalLight dl = new DirectionalLight();
-        dl.setColor(ColorRGBA.White);
-        dl.setDirection(new Vector3f(2.8f, -2.8f, -2.8f).normalizeLocal());
-        rootNode.addLight(dl);
+
+        DirectionalLight light = new DirectionalLight();
+        light.setColor(ColorRGBA.White);
+        light.setDirection(new Vector3f(5, 0, -5).normalize());
+        rootNode.addLight(light);
+
+        PointLight light2 = new PointLight();
+        light2.setColor(ColorRGBA.Blue);
+        light2.setRadius(5f);
+        light2.setPosition(new Vector3f(0, 4, 0));
+        rootNode.addLight(light2);
     }
     
     private void setUpKeys() {
@@ -268,33 +291,29 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
     }
 
     private double rotationP1 = 0;
-    private double rotationP2 = Math.PI;
+    private double rotationP2 = Math.PI/2;
     @Override
     public void simpleUpdate(float tpf) {
         float radius = side.getOuterRadius() + .5f;
         Vector3f pos1 = char_control.get(0).getPhysicsLocation();
         Vector3f pos2 = char_control.get(1).getPhysicsLocation();
-        
+
 
         if (p1Left) {
-            if (!isColRight(pos1, pos2, 3.0f)) {
-                rotationP1 = move(rotationP1, pos1, radius, char_control.get(0), false) % (2 * Math.PI);
-            }
+            rotationP1 = move(rotationP1, pos1, radius, char_control.get(0), false) % (2 * Math.PI);
+
         }
         if (p1Right) {
-            if (!isColLeft(pos1, pos2, 0.2f)) {
-                rotationP1 = move(rotationP1, pos1, radius, char_control.get(0), true) % (2 * Math.PI);
-            }
+            rotationP1 = move(rotationP1, pos1, radius, char_control.get(0), true) % (2 * Math.PI);
+
         }
         if (p2Left) {
-            if (!isColRight(pos1, pos2, 0.2f)) {
-                rotationP2 = move(rotationP2, pos2, radius, char_control.get(1), false) % (2 * Math.PI);
-            }
+            rotationP2 = move(rotationP2, pos2, radius, char_control.get(1), false) % (2 * Math.PI);
+
         }
         if (p2Right) {
-            if (!isColLeft(pos1, pos2, 0.2f)) {
-                rotationP2 = move(rotationP2, pos2, radius, char_control.get(1), true) % (2 * Math.PI);
-            }
+            rotationP2 = move(rotationP2, pos2, radius, char_control.get(1), true) % (2 * Math.PI);
+
         }
         if (camera1) {
             cameraSetUp(0);
@@ -304,24 +323,6 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
         }
     }
     
-    private boolean isColRight(Vector3f p1, Vector3f p2, float tol){
-        if(p1.x > p2.x &&  p1.z > p2.z && p1.x - p2.x < tol && p1.z - p2.z < tol){
-            return true;
-        }
-        else if(p1.x < p2.x &&  p1.z < p2.z && p2.x - p1.x < tol && p2.z - p1.z < tol){
-            return true;
-        }
-        return false;
-    }
-    private boolean isColLeft(Vector3f p1, Vector3f p2, float tol){
-        if(p1.x > p2.x &&  p1.z < p2.z && p1.x - p2.x < tol && p2.z - p1.z < tol){
-            return true;
-        }
-        else if(p1.x < p2.x &&  p1.z > p2.z && p2.x - p1.x < tol && p1.z - p2.z < tol){
-            return true;
-        }
-        return false;
-    }
 
     @Override
     public void simpleRender(RenderManager rm) {
@@ -363,29 +364,23 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
     
     @Override
     public void collision(PhysicsCollisionEvent event) {
-//        if(event.getNodeA().getName().equals("player2")){
-//                if(event.getNodeB().getName().equals("player1")){
-////                    System.out.println("Ball has been caught");
-//                                    System.out.println(event.getNodeA()+" "+event.getNodeB());
-//                                   
-//                }
-//
-//        }
-        if(event.getNodeA().getName().equals("player1")){
-                if(event.getNodeB().getName().equals("player2")){
-//                    System.out.println("Ball has been caught");
-                                    System.out.println(event.getNodeA().getLocalTranslation()+" "+event.getNodeB().getLocalTranslation());
-
-                }
-
+        if (event.getNodeA().getName().equals("player2")) {
+            if (event.getNodeB().getName().equals("Ball")) {
+                RigidBodyControl c = (RigidBodyControl) event.getNodeB().getControl(0);
+                c.setEnabled(false);
+                rootNode.detachChild(event.getNodeB());
+                p2Score++;
+                hud.setText("Blue: " + p1Score + ", Red: " + p2Score);
+            }
         }
-        else{
-            System.out.println("No collision");
+        if (event.getNodeA().getName().equals("player1")) {
+            if (event.getNodeB().getName().equals("Ball")) {
+                RigidBodyControl c = (RigidBodyControl) event.getNodeB().getControl(0);
+                c.setEnabled(false);
+                rootNode.detachChild(event.getNodeB());
+                p1Score++;
+                hud.setText("Blue: " + p1Score + ", Red: " + p2Score);
+            }
         }
-//        try{
-//        System.out.println(ghost1.getOverlappingCount()+" "+ghost1.getOverlappingObjects());
-//        }
-//        catch(Exception e){
-//        }
     }
 }
