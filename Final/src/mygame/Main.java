@@ -57,13 +57,17 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
     private boolean p2Left=false, p2Right=false, p2Forward=false, p2Back=false;
     private boolean camera1 = false, camera2 = false;
     private Torus side;
-    private Camera cam_2;
+    private Camera cam_2, cam_3;
     private Node player1, player2;
     private GhostControl ghost1, ghost2;
     private int p1Score = 0, p2Score = 0;
     BitmapText hud;
     private AnimChannel channel1, channel2;
     private AnimControl control1, control2;
+    private CameraNode camNode1;
+    private CameraNode camNode2;
+    private ViewPort vp2;
+    private ViewPort vp3;
 
     public static void main(String[] args) {
         Main app = new Main();
@@ -78,7 +82,8 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
         player2 = new Node("player2");
         char1 = new RigidBodyControl(1f);
         char2 = new RigidBodyControl(1f);
-        cameraSetUp(1);
+        cameraSetUp();
+        setCamera(1);
         
         hud = new BitmapText(guiFont, false);
         hud.setSize(guiFont.getCharSet().getRenderedSize());
@@ -105,48 +110,76 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
             if(Math.random() > .5){
                 randz = randz*-1;
             }
+            if(randx == 0){
+                randx+=.3;
+            }
+            if(randz == 0){
+                randz+=.3;
+            }
             addBall(new Vector3f(randx, 3.5f, randz));
         }
          
     }
-    private void cameraSetUp(int i){
-        CameraNode camNode1;
-        CameraNode camNode2;
+
+    private void cameraSetUp() {
+
+        viewPort.setBackgroundColor(new ColorRGBA(0.7f, 0.8f, 1f, 1f));
+        cam.setLocation(new Vector3f(0, 12, 12));
+        cam.lookAt(new Vector3f(0, 0, 0), Vector3f.UNIT_Y);
+        cam.setViewPort(0.0f, 1.0f, 0.0f, 1.0f);
+        cam_2 = cam.clone();
+        cam_3 = cam.clone();
+        camNode1 = new CameraNode("CamNode1", cam_3);
+        camNode2 = new CameraNode("CamNode2", cam_2);
+
+        cam_3.setViewPort(0.0f, 1.0f, 0.50f, 1.5f);
+        cam_2.setViewPort(0.0f, 1.0f, -0.5f, 0.5f);
+        vp2 = renderManager.createMainView("View of cam_2", cam_2);
+        vp3 = renderManager.createMainView("View of cam_3", cam_3);
+        vp2.attachScene(rootNode);
+        vp2.setClearFlags(true, true, true);
+        vp2.setBackgroundColor(ColorRGBA.DarkGray);
+        vp3.attachScene(rootNode);
+        vp3.setClearFlags(true, true, true);
+        vp3.setBackgroundColor(ColorRGBA.DarkGray);
+
+        camNode1.setControlDir(ControlDirection.SpatialToCamera);
+        camNode1.setLocalTranslation(new Vector3f(5.5f, 7, 0));
+        camNode1.lookAt(new Vector3f(-2, 4, 0), Vector3f.UNIT_Y);
+
+        camNode2.setControlDir(ControlDirection.SpatialToCamera);
+        camNode2.setLocalTranslation(new Vector3f(5.5f, 7, 0));
+        camNode2.lookAt(new Vector3f(-2, 0, 0), Vector3f.UNIT_Y);
+
+
+        viewPort.setBackgroundColor(new ColorRGBA(0.7f, 0.8f, 1f, 1f));
+        cam.setLocation(new Vector3f(0, 12, 12));
+        cam.lookAt(new Vector3f(0, 0, 0), Vector3f.UNIT_Y);
+        cam.setViewPort(0.0f, 1.0f, 0.0f, 1.0f);
+
+        flyCam.setEnabled(false);
+    }
+    private void setCamera(int i) {
         if (i == 0) {
-            cam.setLocation(new Vector3f(0, 12, 12));
-            cam.lookAt(new Vector3f(0, 0, 0), Vector3f.UNIT_Y);
-            cam_2 = cam.clone();
-            cam.setViewPort(0.0f, 1.0f, 0.50f, 1.0f);
-            cam_2.setViewPort(0.0f, 1.0f, 0.0f, 0.50f);
-            ViewPort vp2 = renderManager.createMainView("View of cam_2", cam_2);
-            vp2.attachScene(rootNode);
-            vp2.setClearFlags(true, true, true);
-            vp2.setBackgroundColor(ColorRGBA.DarkGray);
-
-            camNode1 = new CameraNode("CamNode1", cam);
-            camNode1.setControlDir(ControlDirection.SpatialToCamera);
-            camNode1.setLocalTranslation(new Vector3f(1.5f, 5, 0));
-            camNode1.lookAt(new Vector3f(-4, 0, 0), Vector3f.UNIT_Y);
-
-            camNode2 = new CameraNode("CamNode2", cam_2);
-            camNode2.setControlDir(ControlDirection.SpatialToCamera);
-            camNode2.setLocalTranslation(new Vector3f(1.5f, 5, 0));
-            camNode2.lookAt(new Vector3f(-4, 0, 0), Vector3f.UNIT_Y);
-
+            camNode1.setEnabled(true);
+            camNode2.setEnabled(true);
             player1.attachChild(camNode1);
             player2.attachChild(camNode2);
-
+            vp2.setEnabled(true);
+            vp3.setEnabled(true);
+            viewPort.setEnabled(false);
+        } else {
+            camNode1.setEnabled(false);
+            camNode2.setEnabled(false);
+            player1.detachChild(camNode1);
+            player2.detachChild(camNode2);
+            vp2.setEnabled(false);
+            vp3.setEnabled(false);
+            viewPort.setEnabled(true);
         }
-        else {
 
-            viewPort.setBackgroundColor(new ColorRGBA(0.7f, 0.8f, 1f, 1f));
-            cam.setLocation(new Vector3f(0, 12, 12));
-            cam.lookAt(new Vector3f(0, 0, 0), Vector3f.UNIT_Y);
-            cam.setViewPort(0.0f, 1.0f, 0.0f, 1.0f);
-        }
-            flyCam.setEnabled(false);
     }
-    
+
     private void addBall(Vector3f loc){
         Sphere s = new Sphere(16, 16, 0.2f);
         Geometry ball_geo = new Geometry("Ball", s);
@@ -225,7 +258,7 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
         eleph.setMaterial(eleph_mat);
         eleph.setLocalScale(0.5f);
         
-        ghost = new GhostControl(new BoxCollisionShape(new Vector3f(1.5f,1,1.5f)));
+        ghost = new GhostControl(new BoxCollisionShape(new Vector3f(2.5f,1,0.2f)));
         player.addControl(rbc);
         player.addControl(ghost);
         
@@ -349,10 +382,10 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
             channel2.setLoopMode(LoopMode.Loop);
         }
         if (camera1) {
-            cameraSetUp(0);
+            setCamera(0);
         }
         if (camera2) {
-            cameraSetUp(1);
+            setCamera(1);
         }
     }
     
