@@ -1,11 +1,20 @@
 package mygame;
-
+ 
 import com.jme3.app.SimpleApplication;
+import com.jme3.animation.AnimChannel;
+import com.jme3.animation.AnimControl;
+import com.jme3.animation.AnimEventListener;
+import com.jme3.animation.LoopMode;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.collision.PhysicsCollisionEvent;
 import com.jme3.bullet.collision.PhysicsCollisionListener;
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
+import com.jme3.bullet.util.CollisionShapeFactory;
+import com.jme3.bullet.collision.shapes.CollisionShape;
+import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
+import com.jme3.bullet.collision.shapes.MeshCollisionShape;
+import com.jme3.bullet.control.BetterCharacterControl;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.GhostControl;
 import com.jme3.bullet.control.RigidBodyControl;
@@ -18,6 +27,9 @@ import com.jme3.light.DirectionalLight;
 import com.jme3.light.PointLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.FastMath;
+import com.jme3.math.Matrix3f;
+import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
 import com.jme3.renderer.RenderManager;
@@ -26,14 +38,16 @@ import com.jme3.scene.CameraNode;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
+import com.jme3.scene.control.CameraControl;
 import com.jme3.scene.control.CameraControl.ControlDirection;
 import com.jme3.scene.shape.Box;
+import com.jme3.scene.shape.Cylinder;
 import com.jme3.scene.shape.Sphere;
 import com.jme3.scene.shape.Torus;
 import java.util.ArrayList;
 
 
-public class Main extends SimpleApplication implements ActionListener, PhysicsCollisionListener{
+public class Main extends SimpleApplication implements ActionListener, PhysicsCollisionListener, AnimEventListener{
 
     private BulletAppState jBullet;
     private RigidBodyControl base_phy, sides_phy,center_phy, char1, char2;
@@ -48,6 +62,8 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
     private GhostControl ghost1, ghost2;
     private int p1Score = 0, p2Score = 0;
     BitmapText hud;
+    private AnimChannel channel1, channel2;
+    private AnimControl control1, control2;
 
     public static void main(String[] args) {
         Main app = new Main();
@@ -193,7 +209,7 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
     }
     
     private void playerSetUp(Vector3f loc, Node player, GhostControl ghost, RigidBodyControl rbc, int i){
-        Spatial eleph = assetManager.loadModel("Models/e2.obj");
+        Spatial eleph = assetManager.loadModel("Models/Sphere.mesh.xml");
         
         CapsuleCollisionShape capsule = new CapsuleCollisionShape(0.1f, 0.1f);
         eleph_phy = new CharacterControl(capsule, .01f);
@@ -225,6 +241,18 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
         jBullet.getPhysicsSpace().add(ghost);
         rootNode.attachChild(player);
         char_control.add(eleph_phy);
+
+        if (i == 0) {
+            control1 = player.getChild(0).getControl(AnimControl.class);
+            control1.addListener(this);
+            channel1 = control1.createChannel();
+            channel1.setAnim("Stand");
+        } else {
+            control2 = player.getChild(0).getControl(AnimControl.class);
+            control2.addListener(this);
+            channel2 = control2.createChannel();
+            channel2.setAnim("Stand");
+        }
     }
     
     
@@ -301,19 +329,24 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
 
         if (p1Left) {
             rotationP1 = move(rotationP1, pos1, radius, char_control.get(0), false) % (2 * Math.PI);
+            channel1.setAnim("Waddle", 2f);
+            channel1.setLoopMode(LoopMode.Loop);
 
         }
         if (p1Right) {
             rotationP1 = move(rotationP1, pos1, radius, char_control.get(0), true) % (2 * Math.PI);
-
+            channel1.setAnim("Waddle", 2f);
+            channel1.setLoopMode(LoopMode.Loop);
         }
         if (p2Left) {
             rotationP2 = move(rotationP2, pos2, radius, char_control.get(1), false) % (2 * Math.PI);
-
+            channel2.setAnim("Waddle", 2f);
+            channel2.setLoopMode(LoopMode.Loop);
         }
         if (p2Right) {
             rotationP2 = move(rotationP2, pos2, radius, char_control.get(1), true) % (2 * Math.PI);
-
+            channel2.setAnim("Waddle", 2f);
+            channel2.setLoopMode(LoopMode.Loop);
         }
         if (camera1) {
             cameraSetUp(0);
@@ -383,4 +416,20 @@ public class Main extends SimpleApplication implements ActionListener, PhysicsCo
             }
         }
     }
+
+    public void onAnimCycleDone(AnimControl control, AnimChannel channel, String animName) {
+      if (animName.equals("Waddle")) {
+        channel.setAnim("Stand", 0.50f);
+        channel.setLoopMode(LoopMode.DontLoop);
+        channel.setSpeed(1f);
+      }
+      if (animName.equals("Trunk")) {
+        channel.setAnim("Stand", 0.50f);
+        channel.setLoopMode(LoopMode.DontLoop);
+        channel.setSpeed(1f);
+      }
+    }
+ 
+    public void onAnimChange(AnimControl control, AnimChannel channel, String animName) {}
+
 }
